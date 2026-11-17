@@ -152,7 +152,7 @@ fun EditorScreen(
     val visualPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(15)
     ) { uris ->
-        if (uris.isNotEmpty()) viewModel.importMediaUris(uris, addToTimelineAtPlayhead = false)
+        if (uris.isNotEmpty()) viewModel.importMediaUris(uris, addToTimelineAtPlayhead = true)
     }
 
     val audioPicker = rememberLauncherForActivityResult(
