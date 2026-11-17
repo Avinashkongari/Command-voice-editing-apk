@@ -372,6 +372,10 @@ class EditorViewModel(
 
     fun deleteAsset(assetId: String) {
         viewModelScope.launch {
+            timelineEngine.deleteAssetClips(assetId)?.let { applyEngineResult(it) }
+            if (_uiState.value.selectedAssetId == assetId) {
+                _uiState.update { it.copy(selectedAssetId = null) }
+            }
             container.projectRepository.deleteAsset(assetId)
         }
     }
