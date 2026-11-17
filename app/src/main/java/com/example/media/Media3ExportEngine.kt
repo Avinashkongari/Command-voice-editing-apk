@@ -442,7 +442,7 @@ class Media3ExportEngine(
             )
         }
 
-        // Static scale & rotation
+        // Static base scale & rotation.
         if (clip.scale != 1f || clip.rotationDeg != 0f) {
             list.add(
                 ScaleAndRotateTransformation.Builder()
@@ -450,6 +450,30 @@ class Media3ExportEngine(
                     .setRotationDegrees(-clip.rotationDeg)
                     .build()
             )
+        }
+
+        // Animate keyframed scale during export as well as in the live preview.
+        // Keyframe scale values are absolute clip scales, so this matrix applies only
+        // the ratio over the static base scale above.
+        if (clip.keyframes.size >= 2) {
+            val frames = clip.keyframes.sortedBy { it.timeOffsetMs }
+            val baseScale = clip.scale.coerceAtLeast(0.001f)
+            list.add(MatrixTransformation { timeUs ->
+                val localMs = (timeUs / 1000L).coerceIn(0L, durationMs)
+                val before = frames.lastOrNull { it.timeOffsetMs <= localMs }
+                val after = frames.firstOrNull { it.timeOffsetMs > localMs }
+                val animatedScale = when {
+                    before != null && after != null && after.timeOffsetMs > before.timeOffsetMs -> {
+                        val fraction = ((localMs - before.timeOffsetMs).toFloat() /
+                            (after.timeOffsetMs - before.timeOffsetMs).toFloat()).coerceIn(0f, 1f)
+                        before.scale + (after.scale - before.scale) * fraction
+                    }
+                    before != null -> before.scale
+                    else -> frames.first().scale
+                }
+                val factor = (animatedScale / baseScale).coerceIn(0.1f, 4f)
+                Matrix().apply { postScale(factor, factor) }
+            })
         }
 
         // Motion effects (Ken Burns / Zoom In / Zoom Out / Pan)
