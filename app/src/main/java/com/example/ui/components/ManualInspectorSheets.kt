@@ -86,7 +86,7 @@ fun ManualInspectorSheet(
         exposure: Float?, blur: Float?, sharpen: Float?,
         opacity: Float?, filter: ColorFilterPreset?, motion: MotionEffectPreset?
     ) -> Unit,
-    onUpdateTransform: (scale: Float?, x: Float?, y: Float?, crop: CropRect?) -> Unit,
+    onUpdateTransform: (scale: Float?, x: Float?, y: Float?, stretchX: Float?, stretchY: Float?, crop: CropRect?) -> Unit,
     onRotate: (Float) -> Unit,
     onUpdateTransition: (TransitionType, Long) -> Unit,
     onUpdateSpeed: (Float) -> Unit,
