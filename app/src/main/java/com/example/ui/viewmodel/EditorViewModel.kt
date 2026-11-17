@@ -727,11 +727,49 @@ class EditorViewModel(
                 }
 
                 // Execute validated structured command inside TimelineEngine
-                val result = timelineEngine.executeAiOperations(
-                    operations = validation.operations,
-                    assets = assets.value,
-                    playheadMs = cur.playheadMs
-                )
+                val result = runCatching {
+                    timelineEngine.executeAiOperations(
+                        operations = validation.operations,
+                        assets = assets.value,
+                        playheadMs = cur.playheadMs
+                    )
+                }.getOrElse { error ->
+                    _uiState.update { it.copy(isAiProcessing = false) }
+                    appendChatMessage(
+                        AiChatMessage(
+                            id = UUID.randomUUID().toString(),
+                            role = ChatRole.ERROR,
+                            text = "Timeline edit apply nahi ho paya: ${error.message ?: "Unknown editing error"}. Timeline unchanged rakhi gayi."
+                        )
+                    )
+                    return
+                }
+
+                if (!result.success) {
+                    if (result.document != cur.timeline) applyEngineResult(result)
+                    _uiState.update { it.copy(isAiProcessing = false) }
+                    appendChatMessage(
+                        AiChatMessage(
+                            id = UUID.randomUUID().toString(),
+                            role = ChatRole.ERROR,
+                            text = "Edit complete nahi hua: ${result.summary}. Timeline engine ne successful edit confirm nahi ki."
+                        )
+                    )
+                    return
+                }
+
+                if (result.document == cur.timeline) {
+                    _uiState.update { it.copy(isAiProcessing = false) }
+                    appendChatMessage(
+                        AiChatMessage(
+                            id = UUID.randomUUID().toString(),
+                            role = ChatRole.ERROR,
+                            text = "AI command se timeline mein koi change nahi hua. Isliye success nahi dikhaya gaya. Clip select karke command dobara dein."
+                        )
+                    )
+                    return
+                }
+
                 applyEngineResult(result)
                 _uiState.update { it.copy(isAiProcessing = false) }
 
@@ -845,7 +883,7 @@ class EditorViewModel(
     override fun onCleared() {
         super.onCleared()
         playbackJob?.cancel()
-        voiceRecognizer.stopListening()
+        voiceRecognizer.cancelListening()
         container.voiceRecorderManager.stopAndDiscard()
         runCatching { videoPlayer.release() }
         runCatching { audioPlayer.release() }
