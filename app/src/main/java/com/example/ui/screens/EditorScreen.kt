@@ -526,14 +526,9 @@ fun EditorScreen(
                         .height(48.dp)
                         .clip(RoundedCornerShape(24.dp))
                         .clickable {
+                            // Opening the AI panel must never start microphone capture.
+                            // Listening starts only from the explicit microphone button in AiAssistantPanel.
                             showAiSheet = true
-                            if (voiceState is VoiceRecognitionState.Listening) {
-                                viewModel.voiceRecognizer.stopListening()
-                            } else if (isAiReady) {
-                                runWithMicPermission {
-                                    viewModel.voiceRecognizer.startListening(uiState.voiceLanguageMode)
-                                }
-                            }
                         }
                         .testTag("editor_ai_voice_fab")
                 ) {
