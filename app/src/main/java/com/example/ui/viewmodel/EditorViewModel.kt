@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.effect.GaussianBlurWithFrameOverlaid
 import com.example.AppContainer
 import com.example.ai.adapter.AdapterResult
 import com.example.ai.engine.AiPromptBuilder
@@ -247,9 +248,11 @@ class EditorViewModel(
                 videoPlayer.seekTo(offsetInClip)
             }
             videoPlayer.volume = if (videoClip.isMuted) 0f else videoClip.volume.coerceIn(0f, 1f)
+            videoPlayer.setVideoEffects(if (videoClip.backgroundBlurRadius > 0.1f) listOf(GaussianBlurWithFrameOverlaid(videoClip.backgroundBlurRadius.coerceIn(1f, 40f), 1f, 1f)) else emptyList())
             videoPlayer.setPlaybackSpeed(videoClip.speed.coerceIn(0.25f, 4f))
             if (playWhenReady && !videoPlayer.isPlaying) videoPlayer.play()
         } else {
+            videoPlayer.setVideoEffects(emptyList())
             if (videoPlayer.isPlaying) videoPlayer.pause()
         }
 
@@ -491,6 +494,12 @@ class EditorViewModel(
                 )
             )
         }?.let { applyEngineResult(it) }
+    }
+
+    fun updateSelectedClipBackgroundBlur(radius: Float) {
+        val clipId = _uiState.value.selectedClipId ?: return
+        timelineEngine.updateClip(clipId, "Updated background blur") { it.copy(backgroundBlurRadius = radius.coerceIn(0f, 40f)) }
+            ?.let { applyEngineResult(it) }
     }
 
     fun updateSelectedClipTransform(scale: Float? = null, x: Float? = null, y: Float? = null, stretchX: Float? = null, stretchY: Float? = null, crop: com.example.domain.model.CropRect? = null) {
