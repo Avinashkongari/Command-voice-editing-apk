@@ -154,6 +154,13 @@ class TimelineEngine(initialDocument: TimelineDocument = TimelineDocument()) {
         return commit(next, "Deleted ${target.label}")
     }
 
+    fun deleteAssetClips(assetId: String): EngineExecutionResult? {
+        val matching = currentDocument.clips.filter { it.assetId == assetId }
+        if (matching.isEmpty()) return null
+        val next = currentDocument.copy(clips = currentDocument.clips.filterNot { it.assetId == assetId })
+        return commit(next, "Removed ${matching.size} timeline clip(s) for media asset")
+    }
+
     fun duplicateClip(clipId: String): EngineExecutionResult? {
         val target = currentDocument.clips.firstOrNull { it.id == clipId } ?: return null
         val dur = target.durationMs
