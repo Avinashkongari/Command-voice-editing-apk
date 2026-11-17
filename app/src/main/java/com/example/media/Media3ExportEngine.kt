@@ -36,6 +36,7 @@ import androidx.media3.effect.Brightness
 import androidx.media3.effect.Contrast
 import androidx.media3.effect.Crop
 import androidx.media3.effect.HslAdjustment
+import androidx.media3.effect.GaussianBlurWithFrameOverlaid
 import androidx.media3.effect.MatrixTransformation
 import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.Presentation
@@ -561,6 +562,10 @@ class Media3ExportEngine(
                 override fun getSpeed(timeUs: Long): Float = clip.speed
                 override fun getNextSpeedChangeTimeUs(timeUs: Long): Long = androidx.media3.common.C.TIME_UNSET
             }))
+        }
+
+        if (clip.backgroundBlurRadius > 0.1f) {
+            list.add(GaussianBlurWithFrameOverlaid(clip.backgroundBlurRadius.coerceIn(1f, 40f), 1f, 1f))
         }
 
         return list
