@@ -119,7 +119,6 @@ data class Keyframe(
     val scale: Float = 1f,
     val stretchX: Float = 1f,
     val stretchY: Float = 1f,
-    val backgroundBlurRadius: Float = 0f,
     val rotationDeg: Float = 0f,
     val opacity: Float = 1f,
     val volume: Float = 1f
@@ -179,6 +178,7 @@ data class TimelineClip(
     val scale: Float = 1f,
     val stretchX: Float = 1f,
     val stretchY: Float = 1f,
+    val backgroundBlurRadius: Float = 0f,
     val rotationDeg: Float = 0f,
     val crop: CropRect = CropRect(),
     val transitionIn: TransitionType = TransitionType.NONE,
