@@ -313,13 +313,13 @@ class EditorViewModel(
                     lastImported = finalAsset
 
                     if (addToTimelineAtPlayhead) {
-                        val start = _uiState.value.playheadMs
                         val track = when (finalAsset.type) {
                             MediaAssetType.VIDEO -> TrackType.VIDEO_MAIN
                             MediaAssetType.IMAGE -> TrackType.IMAGE_OVERLAY
                             MediaAssetType.AUDIO -> TrackType.AUDIO_MAIN
                             MediaAssetType.VOICEOVER -> TrackType.AUDIO_VOICEOVER
                         }
+                        val start = if (finalAsset.type == MediaAssetType.IMAGE) nextImageAppendPositionMs() else _uiState.value.playheadMs
                         val dur = when (finalAsset.type) {
                             MediaAssetType.IMAGE -> _uiState.value.timeline.defaultImageDurationMs
                             else -> finalAsset.durationMs.coerceAtLeast(3000L)
@@ -350,19 +350,26 @@ class EditorViewModel(
     }
 
     fun addAssetToTimelineAtPlayhead(asset: MediaAsset) {
-        val start = _uiState.value.playheadMs
         val track = when (asset.type) {
             MediaAssetType.VIDEO -> TrackType.VIDEO_MAIN
             MediaAssetType.IMAGE -> TrackType.IMAGE_OVERLAY
             MediaAssetType.AUDIO -> TrackType.AUDIO_MAIN
             MediaAssetType.VOICEOVER -> TrackType.AUDIO_VOICEOVER
         }
+        val start = if (asset.type == MediaAssetType.IMAGE) nextImageAppendPositionMs() else _uiState.value.playheadMs
         val dur = when (asset.type) {
             MediaAssetType.IMAGE -> _uiState.value.timeline.defaultImageDurationMs
             else -> asset.durationMs.coerceAtLeast(3000L)
         }
         applyEngineResult(timelineEngine.addAssetClip(asset, track, start, start + dur))
     }
+
+    /** Append still images to the end of the image lane, like a sequential photo montage. */
+    private fun nextImageAppendPositionMs(): Long =
+        _uiState.value.timeline.clips
+            .filter { it.trackType == TrackType.IMAGE_OVERLAY }
+            .maxOfOrNull { it.endMs }
+            ?: _uiState.value.playheadMs
 
     fun updateAssetTags(asset: MediaAsset, newTags: String, newName: String) {
         viewModelScope.launch {
