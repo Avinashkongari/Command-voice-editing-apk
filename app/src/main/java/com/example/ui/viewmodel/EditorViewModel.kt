@@ -493,11 +493,13 @@ class EditorViewModel(
         }?.let { applyEngineResult(it) }
     }
 
-    fun updateSelectedClipTransform(scale: Float? = null, x: Float? = null, y: Float? = null, crop: com.example.domain.model.CropRect? = null) {
+    fun updateSelectedClipTransform(scale: Float? = null, x: Float? = null, y: Float? = null, stretchX: Float? = null, stretchY: Float? = null, crop: com.example.domain.model.CropRect? = null) {
         val clipId = _uiState.value.selectedClipId ?: return
         timelineEngine.updateClip(clipId, "Updated framing & crop") { clip ->
             clip.copy(
                 scale = scale ?: clip.scale,
+                stretchX = stretchX?.coerceIn(0.25f, 3f) ?: clip.stretchX,
+                stretchY = stretchY?.coerceIn(0.25f, 3f) ?: clip.stretchY,
                 positionX = x ?: clip.positionX,
                 positionY = y ?: clip.positionY,
                 crop = crop ?: clip.crop
