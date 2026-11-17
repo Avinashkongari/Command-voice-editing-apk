@@ -443,10 +443,10 @@ class Media3ExportEngine(
         }
 
         // Static base scale & rotation.
-        if (clip.scale != 1f || clip.rotationDeg != 0f) {
+        if (clip.scale != 1f || clip.stretchX != 1f || clip.stretchY != 1f || clip.rotationDeg != 0f) {
             list.add(
                 ScaleAndRotateTransformation.Builder()
-                    .setScale(clip.scale, clip.scale)
+                    .setScale(clip.scale * clip.stretchX, clip.scale * clip.stretchY)
                     .setRotationDegrees(-clip.rotationDeg)
                     .build()
             )
