@@ -86,6 +86,7 @@ fun ManualInspectorSheet(
         exposure: Float?, blur: Float?, sharpen: Float?,
         opacity: Float?, filter: ColorFilterPreset?, motion: MotionEffectPreset?
     ) -> Unit,
+    onUpdateBackgroundBlur: (Float) -> Unit,
     onUpdateTransform: (scale: Float?, x: Float?, y: Float?, stretchX: Float?, stretchY: Float?, crop: CropRect?) -> Unit,
     onRotate: (Float) -> Unit,
     onUpdateTransition: (TransitionType, Long) -> Unit,
@@ -141,7 +142,7 @@ fun ManualInspectorSheet(
                         TransformCropInspector(clip, onUpdateTransform, onRotate)
                     }
                     EditorInspectorTab.EFFECTS -> selectedClip?.let { clip ->
-                        EffectsInspector(clip, onUpdateEffects)
+                        EffectsInspector(clip, onUpdateEffects, onUpdateBackgroundBlur)
                     }
                     EditorInspectorTab.TRANSITIONS -> selectedClip?.let { clip ->
                         TransitionsInspector(clip, onUpdateTransition)
@@ -188,6 +189,17 @@ private fun TimingInspector(clip: TimelineClip, onUpdateTiming: (Long, Long) -> 
             singleLine = true,
             modifier = Modifier.weight(1f)
         )
+    }
+    if (clip.trackType == com.example.domain.model.TrackType.IMAGE_OVERLAY) {
+        Spacer(Modifier.height(8.dp))
+        Text("Quick image duration", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            (1L..5L).forEach { seconds ->
+                ChoiceChipPill("${seconds}s", clip.durationMs == seconds * 1000L) {
+                    onUpdateTiming(clip.startMs, clip.startMs + seconds * 1000L)
+                }
+            }
+        }
     }
     Spacer(Modifier.height(8.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -257,7 +269,8 @@ private fun TransformCropInspector(
 @Composable
 private fun EffectsInspector(
     clip: TimelineClip,
-    onUpdateEffects: (Float?, Float?, Float?, Float?, Float?, Float?, Float?, ColorFilterPreset?, MotionEffectPreset?) -> Unit
+    onUpdateEffects: (Float?, Float?, Float?, Float?, Float?, Float?, Float?, ColorFilterPreset?, MotionEffectPreset?) -> Unit,
+    onUpdateBackgroundBlur: (Float) -> Unit
 ) {
     val e = clip.effects
     Text("Motion / Ken Burns", style = MaterialTheme.typography.labelLarge, color = TextSecondary)
@@ -305,7 +318,10 @@ private fun EffectsInspector(
     LabeledSlider("Blur", e.blurRadius, 0f..20f, "${e.blurRadius.toInt()}px") {
         onUpdateEffects(null, null, null, null, it, null, null, null, null)
     }
-    LabeledSlider("Opacity", e.opacity, 0f..1f, "${(e.opacity * 100).toInt()}%") {
+    LabeledSlider("Background Blur (sharp foreground)", clip.backgroundBlurRadius, 0f..40f, "${clip.backgroundBlurRadius.toInt()}px") {
+        onUpdateBackgroundBlur(it)
+    }
+    LabeledSlider("Opacity", e.opacity, 0f..1f, "${(e.opacity * 100).toInt()}%")
         onUpdateEffects(null, null, null, null, null, null, it, null, null)
     }
 }
