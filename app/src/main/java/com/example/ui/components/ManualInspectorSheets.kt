@@ -321,7 +321,7 @@ private fun EffectsInspector(
     LabeledSlider("Background Blur (sharp foreground)", clip.backgroundBlurRadius, 0f..40f, "${clip.backgroundBlurRadius.toInt()}px") {
         onUpdateBackgroundBlur(it)
     }
-    LabeledSlider("Opacity", e.opacity, 0f..1f, "${(e.opacity * 100).toInt()}%")
+    LabeledSlider("Opacity", e.opacity, 0f..1f, "${(e.opacity * 100).toInt()}%") {
         onUpdateEffects(null, null, null, null, null, null, it, null, null)
     }
 }
