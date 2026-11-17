@@ -269,11 +269,20 @@ fun MultiTrackTimeline(
                         .width(16.dp)
                         .fillMaxHeight()
                         .pointerInput(pxPerMs) {
-                            detectDragGestures { change, dragAmount ->
-                                change.consume()
-                                val deltaMs = (dragAmount.x / pxPerMs).roundToLong()
-                                onSeek(playheadMs + deltaMs)
-                            }
+                            var dragStartMs = playheadMs
+                            var accumulatedDragPx = 0f
+                            detectDragGestures(
+                                onDragStart = {
+                                    dragStartMs = playheadMs
+                                    accumulatedDragPx = 0f
+                                },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    accumulatedDragPx += dragAmount.x
+                                    val targetMs = dragStartMs + (accumulatedDragPx / pxPerMs).roundToLong()
+                                    onSeek(targetMs.coerceIn(0L, totalTimelineMs))
+                                }
+                            )
                         }
                 ) {
                     Canvas(modifier = Modifier.fillMaxSize()) {
@@ -445,12 +454,21 @@ private fun TrackLaneRow(
                         detectTapGestures { onSelectClip(clip.id) }
                     }
                     .pointerInput(clip.id, pxPerMs) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            val deltaMs = (dragAmount.x / pxPerMs).roundToLong()
-                            val newStart = (clip.startMs + deltaMs).coerceAtLeast(0L)
-                            onMoveClip(clip.id, newStart, newStart + clip.durationMs)
-                        }
+                        var dragStartMs = clip.startMs
+                        var accumulatedDragPx = 0f
+                        detectDragGestures(
+                            onDragStart = {
+                                dragStartMs = clip.startMs
+                                accumulatedDragPx = 0f
+                                onSelectClip(clip.id)
+                            },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                accumulatedDragPx += dragAmount.x
+                                val newStart = (dragStartMs + (accumulatedDragPx / pxPerMs).roundToLong()).coerceAtLeast(0L)
+                                onMoveClip(clip.id, newStart, newStart + clip.durationMs)
+                            }
+                        )
                     }
             ) {
                 // Audio Waveform Canvas inside Audio Clips
