@@ -37,6 +37,7 @@ class VoiceCommandRecognizer(private val context: Context) {
     private var recognitionIntent: Intent? = null
     private var sessionActive = false
     private var manualStopRequested = false
+    private var segmentRunning = false
     private val completedSegments = mutableListOf<String>()
 
     private val _state = MutableStateFlow<VoiceRecognitionState>(VoiceRecognitionState.Idle)
@@ -92,6 +93,7 @@ class VoiceCommandRecognizer(private val context: Context) {
                 override fun onEndOfSpeech() = Unit
 
                 override fun onError(error: Int) {
+                    segmentRunning = false
                     if (!sessionActive) return
                     if (manualStopRequested) {
                         finishSession()
@@ -118,6 +120,7 @@ class VoiceCommandRecognizer(private val context: Context) {
                 }
 
                 override fun onResults(results: Bundle?) {
+                    segmentRunning = false
                     if (!sessionActive) return
                     val best = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull()?.trim().orEmpty()
@@ -150,9 +153,11 @@ class VoiceCommandRecognizer(private val context: Context) {
         if (!sessionActive || manualStopRequested) return
         val recognizer = speechRecognizer ?: return
         val intent = recognitionIntent ?: return
+        segmentRunning = true
         runCatching {
             recognizer.startListening(intent)
         }.onFailure {
+            segmentRunning = false
             endSession()
             _state.value = VoiceRecognitionState.Error(
                 it.message ?: "Could not restart speech recognition. Please try again."
@@ -183,6 +188,10 @@ class VoiceCommandRecognizer(private val context: Context) {
         }
         manualStopRequested = true
         mainHandler.removeCallbacksAndMessages(null)
+        if (!segmentRunning) {
+            finishSession()
+            return
+        }
         runCatching { speechRecognizer?.stopListening() }
             .onFailure { finishSession() }
     }
@@ -191,6 +200,7 @@ class VoiceCommandRecognizer(private val context: Context) {
     fun cancelListening() {
         sessionActive = false
         manualStopRequested = true
+        segmentRunning = false
         mainHandler.removeCallbacksAndMessages(null)
         runCatching { speechRecognizer?.cancel() }
         runCatching { speechRecognizer?.destroy() }
@@ -212,6 +222,7 @@ class VoiceCommandRecognizer(private val context: Context) {
 
     private fun endSession() {
         sessionActive = false
+        segmentRunning = false
         mainHandler.removeCallbacksAndMessages(null)
         runCatching { speechRecognizer?.cancel() }
         runCatching { speechRecognizer?.destroy() }
