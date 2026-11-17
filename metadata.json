@@ -1,0 +1,6 @@
+{
+  "name": "VoxCut Studio",
+  "description": "AI voice-controlled multi-track Android video editing studio with Media3 Transformer rendering and multi-provider LLM support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

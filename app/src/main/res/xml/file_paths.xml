@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <files-path name="voxcut_files" path="." />
+    <cache-path name="voxcut_cache" path="." />
+    <external-files-path name="voxcut_movies" path="Movies/" />
+</paths>
