@@ -288,6 +288,13 @@ class TimelineEngine(initialDocument: TimelineDocument = TimelineDocument()) {
                     )
                 }!!
             }
+            "stretch" -> {
+                val sx = (op.stretch_x ?: 1f).coerceIn(0.25f, 3f)
+                val sy = (op.stretch_y ?: 1f).coerceIn(0.25f, 3f)
+                updateClip(op.clip_id!!, "Set independent stretch to ${sx}x × ${sy}x") {
+                    it.copy(stretchX = sx, stretchY = sy)
+                } ?: EngineExecutionResult(currentDocument, null, "Clip not found for stretch.", success = false)
+            }
             "rotate" -> {
                 val deg = op.rotation_deg ?: 90f
                 updateClip(op.clip_id!!, "Rotated ${deg.toInt()}°") {
