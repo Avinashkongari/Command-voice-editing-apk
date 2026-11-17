@@ -176,6 +176,8 @@ data class TimelineClip(
     val positionX: Float = 0.5f,
     val positionY: Float = 0.5f,
     val scale: Float = 1f,
+    val stretchX: Float = 1f,
+    val stretchY: Float = 1f,
     val rotationDeg: Float = 0f,
     val crop: CropRect = CropRect(),
     val transitionIn: TransitionType = TransitionType.NONE,
