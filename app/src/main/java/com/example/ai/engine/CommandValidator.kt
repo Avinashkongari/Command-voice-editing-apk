@@ -116,6 +116,14 @@ object CommandValidator {
             }
             val clip = timeline.clips.first { it.id == targetClipId }
 
+            if (opName == "trim") {
+                val trimStart = op.trim_start_ms ?: clip.sourceStartMs
+                val trimEnd = op.trim_end_ms ?: clip.sourceEndMs
+                if (trimStart < 0L || trimEnd <= trimStart) {
+                    return ValidationResult.Invalid("Trim range invalid hai: source end, source start se bada hona chahiye.")
+                }
+            }
+
             if (opName == "split") {
                 val splitAt = op.split_ms ?: op.start_ms ?: playheadMs
                 if (splitAt <= clip.startMs + 100L || splitAt >= clip.endMs - 100L) {
@@ -196,7 +204,6 @@ object CommandValidator {
         if (!selectedClipId.isNullOrBlank()) {
             timeline.clips.firstOrNull { it.id == selectedClipId }?.let { return it.id }
         }
-        return timeline.clips.firstOrNull { playheadMs in it.startMs..it.endMs }?.id
-            ?: timeline.clips.lastOrNull()?.id
+        return timeline.clips.singleOrNull { playheadMs in it.startMs until it.endMs }?.id
     }
 }
