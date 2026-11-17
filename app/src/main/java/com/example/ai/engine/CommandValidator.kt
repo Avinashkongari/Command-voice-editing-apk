@@ -19,7 +19,7 @@ object CommandValidator {
         "trim", "split", "delete", "move", "resize", "crop", "rotate",
         "duplicate", "freeze_frame", "add_transition", "add_effect",
         "add_text", "add_subtitle", "change_speed", "adjust_volume",
-        "set_keyframe", "undo", "redo", "request_asset", "clarify"
+        "set_keyframe", "animate_all_images", "undo", "redo", "request_asset", "clarify"
     )
 
     fun validate(
@@ -106,6 +106,16 @@ object CommandValidator {
 
             if (opName in setOf("undo", "redo")) {
                 normalized.add(op)
+                continue
+            }
+
+            if (opName == "animate_all_images") {
+                val imageAssetIds = assets.filter { it.type == MediaAssetType.IMAGE }.map { it.id }.toSet()
+                val imageClipCount = timeline.clips.count { it.assetId in imageAssetIds }
+                if (imageClipCount == 0) {
+                    return ValidationResult.Invalid("Timeline mein koi image clip nahi hai. Pehle images add karo.")
+                }
+                normalized.add(op.copy(scale = (op.scale ?: 1.08f).coerceIn(1.01f, 1.5f)))
                 continue
             }
 
