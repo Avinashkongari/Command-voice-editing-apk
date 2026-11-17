@@ -465,8 +465,12 @@ private fun TrackLaneRow(
                             onDrag = { change, dragAmount ->
                                 change.consume()
                                 accumulatedDragPx += dragAmount.x
+                            },
+                            onDragEnd = {
                                 val newStart = (dragStartMs + (accumulatedDragPx / pxPerMs).roundToLong()).coerceAtLeast(0L)
-                                onMoveClip(clip.id, newStart, newStart + clip.durationMs)
+                                if (newStart != dragStartMs) {
+                                    onMoveClip(clip.id, newStart, newStart + clip.durationMs)
+                                }
                             }
                         )
                     }
