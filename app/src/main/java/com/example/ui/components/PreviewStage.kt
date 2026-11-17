@@ -164,8 +164,8 @@ fun LivePreviewStage(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer {
-                                    scaleX = tf.scale
-                                    scaleY = tf.scale
+                                    scaleX = tf.scale * activeVideoClip.stretchX
+                                    scaleY = tf.scale * activeVideoClip.stretchY
                                     rotationZ = tf.rotationDeg
                                     alpha = tf.opacity
                                     translationX = tf.translateXPx * size.width
@@ -199,8 +199,8 @@ fun LivePreviewStage(
                                 } else Modifier
                             )
                             .graphicsLayer {
-                                scaleX = tf.scale
-                                scaleY = tf.scale
+                                scaleX = tf.scale * imgClip.stretchX
+                                scaleY = tf.scale * imgClip.stretchY
                                 rotationZ = tf.rotationDeg
                                 alpha = tf.opacity
                                 translationX = ((imgClip.positionX - 0.5f) + tf.translateXPx) * size.width
