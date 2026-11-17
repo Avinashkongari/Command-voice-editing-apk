@@ -16,7 +16,7 @@ object CommandValidator {
 
     private val supportedOps = setOf(
         "add_image", "add_video", "add_audio",
-        "trim", "split", "delete", "move", "resize", "crop", "rotate", "stretch",
+        "trim", "split", "delete", "move", "resize", "crop", "rotate", "stretch", "background_blur",
         "duplicate", "freeze_frame", "add_transition", "add_effect",
         "add_text", "add_subtitle", "change_speed", "adjust_volume",
         "set_keyframe", "animate_all_images", "undo", "redo", "request_asset", "clarify"
