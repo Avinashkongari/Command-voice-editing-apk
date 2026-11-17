@@ -117,6 +117,8 @@ data class Keyframe(
     val x: Float = 0.5f,
     val y: Float = 0.5f,
     val scale: Float = 1f,
+    val stretchX: Float = 1f,
+    val stretchY: Float = 1f,
     val rotationDeg: Float = 0f,
     val opacity: Float = 1f,
     val volume: Float = 1f
@@ -303,6 +305,8 @@ data class AiEditorOperation(
     val fade_out_ms: Long? = null,
     val rotation_deg: Float? = null,
     val scale: Float? = null,
+    val stretch_x: Float? = null,
+    val stretch_y: Float? = null,
     val x: Float? = null,
     val y: Float? = null,
     val opacity: Float? = null,
