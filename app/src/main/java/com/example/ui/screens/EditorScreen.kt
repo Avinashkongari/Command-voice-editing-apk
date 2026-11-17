@@ -275,16 +275,24 @@ fun EditorScreen(
             )
 
             // 3. Live Operation Status Banner
-            AnimatedVisibility(visible = uiState.lastOperationBanner != null || voiceState is VoiceRecognitionState.Listening) {
+            AnimatedVisibility(visible = uiState.lastOperationBanner != null || uiState.importError != null || uiState.isImportingMedia || voiceState is VoiceRecognitionState.Listening) {
                 Surface(
-                    color = if (voiceState is VoiceRecognitionState.Listening) CyanContainer else StudioSurfaceElevated,
+                    color = when {
+                        uiState.importError != null -> RoseError.copy(alpha = 0.16f)
+                        voiceState is VoiceRecognitionState.Listening -> CyanContainer
+                        else -> StudioSurfaceElevated
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(0.5.dp, StudioBorder)
                 ) {
                     val statusText = when (val vs = voiceState) {
                         is VoiceRecognitionState.Listening -> "Listening: ${vs.partialText.ifBlank { "Speak Hindi / English / Hinglish..." }}"
-                        else -> uiState.lastOperationBanner.orEmpty()
+                        else -> when {
+                            uiState.importError != null -> "Import failed: ${uiState.importError}"
+                            uiState.isImportingMedia -> "Importing media and adding to timeline..."
+                            else -> uiState.lastOperationBanner.orEmpty()
+                        }
                     }
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
@@ -294,7 +302,11 @@ fun EditorScreen(
                         Text(
                             text = statusText,
                             style = MaterialTheme.typography.labelMedium,
-                            color = if (voiceState is VoiceRecognitionState.Listening) CyanPrimary else EmeraldAudio,
+                            color = when {
+                                uiState.importError != null -> RoseError
+                                voiceState is VoiceRecognitionState.Listening -> CyanPrimary
+                                else -> EmeraldAudio
+                            },
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
