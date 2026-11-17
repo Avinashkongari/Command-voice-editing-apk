@@ -515,7 +515,9 @@ fun EditorScreen(
                         .clip(RoundedCornerShape(24.dp))
                         .clickable {
                             showAiSheet = true
-                            if (isAiReady && voiceState !is VoiceRecognitionState.Listening) {
+                            if (voiceState is VoiceRecognitionState.Listening) {
+                                viewModel.voiceRecognizer.stopListening()
+                            } else if (isAiReady) {
                                 runWithMicPermission {
                                     viewModel.voiceRecognizer.startListening(uiState.voiceLanguageMode)
                                 }
