@@ -214,29 +214,39 @@ private fun TimingInspector(clip: TimelineClip, onUpdateTiming: (Long, Long) -> 
 @Composable
 private fun TransformCropInspector(
     clip: TimelineClip,
-    onUpdateTransform: (Float?, Float?, Float?, CropRect?) -> Unit,
+    onUpdateTransform: (Float?, Float?, Float?, Float?, Float?, CropRect?) -> Unit,
     onRotate: (Float) -> Unit
 ) {
     var scale by remember(clip.id) { mutableFloatStateOf(clip.scale) }
     var posX by remember(clip.id) { mutableFloatStateOf(clip.positionX) }
     var posY by remember(clip.id) { mutableFloatStateOf(clip.positionY) }
+    var stretchX by remember(clip.id) { mutableFloatStateOf(clip.stretchX) }
+    var stretchY by remember(clip.id) { mutableFloatStateOf(clip.stretchY) }
     var cropMargin by remember(clip.id) { mutableFloatStateOf(clip.crop.left) }
 
     LabeledSlider("Scale", scale, 0.3f..2.5f, "${String.format("%.2f", scale)}x") {
         scale = it
-        onUpdateTransform(it, null, null, null)
+        onUpdateTransform(it, null, null, null, null, null)
     }
     LabeledSlider("Horizontal Pos", posX, 0f..1f, "${(posX * 100).toInt()}%") {
         posX = it
-        onUpdateTransform(null, it, null, null)
+        onUpdateTransform(null, it, null, null, null, null)
     }
     LabeledSlider("Vertical Pos", posY, 0f..1f, "${(posY * 100).toInt()}%") {
         posY = it
-        onUpdateTransform(null, null, it, null)
+        onUpdateTransform(null, null, it, null, null, null)
     }
     LabeledSlider("Crop Inset", cropMargin, 0f..0.35f, "${(cropMargin * 100).toInt()}%") {
         cropMargin = it
-        onUpdateTransform(null, null, null, CropRect(it, it, 1f - it, 1f - it))
+        onUpdateTransform(null, null, null, null, null, CropRect(it, it, 1f - it, 1f - it))
+    }
+    LabeledSlider("Horizontal Stretch", stretchX, 0.25f..3f, "${String.format("%.2f", stretchX)}x") {
+        stretchX = it
+        onUpdateTransform(null, null, null, it, null, null)
+    }
+    LabeledSlider("Vertical Stretch", stretchY, 0.25f..3f, "${String.format("%.2f", stretchY)}x") {
+        stretchY = it
+        onUpdateTransform(null, null, null, null, it, null)
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(onClick = { onRotate(90f) }, modifier = Modifier.weight(1f)) { Text("Rotate +90°") }
