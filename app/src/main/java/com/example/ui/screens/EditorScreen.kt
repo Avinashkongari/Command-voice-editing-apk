@@ -425,6 +425,7 @@ fun EditorScreen(
                         onUpdateEffects = { b, c, sat, ex, bl, sh, op, flt, mot ->
                             viewModel.updateSelectedClipEffects(b, c, sat, ex, bl, sh, op, flt, mot)
                         },
+                        onUpdateBackgroundBlur = { radius -> viewModel.updateSelectedClipBackgroundBlur(radius) },
                         onUpdateTransform = { sc, x, y, sx, sy, cr ->
                             viewModel.updateSelectedClipTransform(sc, x, y, sx, sy, cr)
                         },
