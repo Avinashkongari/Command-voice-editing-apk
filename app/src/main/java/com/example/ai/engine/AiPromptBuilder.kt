@@ -49,7 +49,7 @@ STRICT PRIVACY & ASSET RULES:
   "status_preview": "Short live action status e.g. 'Image timeline mein add kar raha hoon...'",
   "operations": [
     {
-      "operation": "add_image | add_video | add_audio | trim | split | delete | move | resize | crop | rotate | duplicate | freeze_frame | add_transition | add_effect | add_text | add_subtitle | change_speed | adjust_volume | set_keyframe | animate_all_images | undo | redo | request_asset | clarify",
+      "operation": "add_image | add_video | add_audio | trim | split | delete | move | resize | crop | rotate | stretch | duplicate | freeze_frame | add_transition | add_effect | add_text | add_subtitle | change_speed | adjust_volume | set_keyframe | animate_all_images | undo | redo | request_asset | clarify",
       "asset_id": "string or null",
       "clip_id": "string or null",
       "track": "video_main | image_overlay | text_track | effect_track | audio_main | audio_voiceover",
@@ -65,6 +65,8 @@ STRICT PRIVACY & ASSET RULES:
       "fade_out_ms": 0,
       "rotation_deg": 0.0,
       "scale": 1.0,
+      "stretch_x": 1.0,
+      "stretch_y": 1.0,
       "x": 0.5,
       "y": 0.5,
       "opacity": 1.0,
