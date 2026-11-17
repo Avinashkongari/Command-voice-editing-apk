@@ -295,6 +295,12 @@ class TimelineEngine(initialDocument: TimelineDocument = TimelineDocument()) {
                     it.copy(stretchX = sx, stretchY = sy)
                 } ?: EngineExecutionResult(currentDocument, null, "Clip not found for stretch.", success = false)
             }
+            "background_blur" -> {
+                val radius = (op.background_blur_radius ?: op.value ?: 18f).coerceIn(0f, 40f)
+                updateClip(op.clip_id!!, if (radius == 0f) "Disabled background blur" else "Set background blur to ${radius.toInt()}px") {
+                    it.copy(backgroundBlurRadius = radius)
+                } ?: EngineExecutionResult(currentDocument, null, "Clip not found for background blur.", success = false)
+            }
             "rotate" -> {
                 val deg = op.rotation_deg ?: 90f
                 updateClip(op.clip_id!!, "Rotated ${deg.toInt()}°") {
