@@ -366,63 +366,7 @@ class TimelineEngine(initialDocument: TimelineDocument = TimelineDocument()) {
                     it.copy(keyframes = (it.keyframes + kf).sortedBy { k -> k.timeOffsetMs })
                 }!!
             }
-            else -> EngineExecutionResult(currentDocument, null, "No operation executed for '${'
-        }
-    }
-
-    private fun opacityOrPreserve(newOpacity: Float?, clip: TimelineClip): Float =
-        newOpacity?.coerceIn(0f, 1f) ?: clip.effects.opacity
-
-    private fun TimelineClip.copy(
-        effects: ClipEffects,
-        scale: Float,
-        opacityVal: Float
-    ): TimelineClip = this.copy(
-        effects = effects.copy(opacity = opacityVal),
-        scale = scale
-    )
-
-    private fun snapIfEnabled(targetMs: Long, ignoreClipId: String?): Long {
-        if (!currentDocument.snappingEnabled) return targetMs
-        val thresholdMs = 350L
-        val snapPoints = buildList {
-            add(0L)
-            currentDocument.clips.filter { it.id != ignoreClipId }.forEach {
-                add(it.startMs)
-                add(it.endMs)
-            }
-        }
-        return snapPoints.minByOrNull { kotlin.math.abs(it - targetMs) }
-            ?.takeIf { kotlin.math.abs(it - targetMs) <= thresholdMs }
-            ?: targetMs
-    }
-
-    private fun parseHexColor(hex: String?): Long? {
-        if (hex.isNullOrBlank()) return null
-        val clean = hex.trim().removePrefix("#")
-        return when (clean.length) {
-            6 -> ("FF$clean").toLongOrNull(16)
-            8 -> clean.toLongOrNull(16)
-            else -> null
-        }
-    }
-
-    companion object {
-        fun formatMs(ms: Long): String {
-            val totalSec = (ms / 1000L).coerceAtLeast(0L)
-            val mins = totalSec / 60
-            val secs = totalSec % 60
-            val hrs = mins / 60
-            val remMins = mins % 60
-            return if (hrs > 0) {
-                String.format("%02d:%02d:%02d", hrs, remMins, secs)
-            } else {
-                String.format("%02d:%02d", remMins, secs)
-            }
-        }
-    }
-}
-}{op.operation}'.", success = false)
+            else -> EngineExecutionResult(currentDocument, null, "No operation executed for '${op.operation}'.", success = false)
         }
     }
 
