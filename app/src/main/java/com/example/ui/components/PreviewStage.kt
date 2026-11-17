@@ -183,6 +183,15 @@ fun LivePreviewStage(
                         buildComposeColorFilter(imgClip.effects)
                     }
 
+                    if (imgClip.backgroundBlurRadius > 0.1f) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current).data(Uri.parse(asset.uriString)).crossfade(false).build(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize().blur(imgClip.backgroundBlurRadius.dp)
+                                .graphicsLayer { scaleX = 1.35f; scaleY = 1.35f }
+                        )
+                    }
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(Uri.parse(asset.uriString))
