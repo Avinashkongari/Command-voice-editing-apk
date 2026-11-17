@@ -43,13 +43,13 @@ STRICT PRIVACY & ASSET RULES:
 6. For requests like "all images", "every photo", "har image", "sari images" plus "start/end keyframes", create ONE "animate_all_images" operation. It applies to EVERY image clip in the timeline, not just the selected clip. Set scale to the ending zoom multiplier (default 1.08 for a subtle 8% zoom). The app automatically places a start keyframe at offset 0 with each image's current transform and an end keyframe at that image's actual duration, regardless of whether the image is short or long. Do not emit one operation per image.
 7. For natural-language removal requests ("remove", "delete", "hatao", "nikalo", "erase"), use the supported "delete" operation with the exact target clip_id. Never claim removal if no delete operation is returned.
 8. For natural-language add/place/insert requests, use add_image, add_video, or add_audio with a real asset_id from USER ASSETS. If the asset is missing, request it instead of claiming it was added.
-8. Output ONLY valid JSON matching this exact schema:
+9. For CapCut-style background blur behind a photo/video, use operation "background_blur" and set background_blur_radius from 0 (off) to 40. Keep the foreground sharp; do not use the regular foreground "blur" effect for this request.\n8. Output ONLY valid JSON matching this exact schema:
 {
   "reply": "Short helpful confirmation in user's language (Hindi/Hinglish/English)",
   "status_preview": "Short live action status e.g. 'Image timeline mein add kar raha hoon...'",
   "operations": [
     {
-      "operation": "add_image | add_video | add_audio | trim | split | delete | move | resize | crop | rotate | stretch | duplicate | freeze_frame | add_transition | add_effect | add_text | add_subtitle | change_speed | adjust_volume | set_keyframe | animate_all_images | undo | redo | request_asset | clarify",
+      "operation": "add_image | add_video | add_audio | trim | split | delete | move | resize | crop | rotate | stretch | background_blur | duplicate | freeze_frame | add_transition | add_effect | add_text | add_subtitle | change_speed | adjust_volume | set_keyframe | animate_all_images | undo | redo | request_asset | clarify",
       "asset_id": "string or null",
       "clip_id": "string or null",
       "track": "video_main | image_overlay | text_track | effect_track | audio_main | audio_voiceover",
@@ -67,6 +67,7 @@ STRICT PRIVACY & ASSET RULES:
       "scale": 1.0,
       "stretch_x": 1.0,
       "stretch_y": 1.0,
+      "background_blur_radius": 18.0,
       "x": 0.5,
       "y": 0.5,
       "opacity": 1.0,
