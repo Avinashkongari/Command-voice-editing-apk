@@ -3,6 +3,10 @@ package com.example.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -89,6 +93,7 @@ fun MultiTrackTimeline(
     timeline: TimelineDocument,
     assets: List<MediaAsset>,
     playheadMs: Long,
+    isPlaying: Boolean,
     zoom: Float,
     selectedClipId: String?,
     highlightedClipId: String?,
@@ -102,6 +107,7 @@ fun MultiTrackTimeline(
     val assetMap = remember(assets) { assets.associateBy { it.id } }
     val scrollState: ScrollState = rememberScrollState()
     val density = LocalDensity.current
+    val latestPlayheadMs by rememberUpdatedState(playheadMs)
     val basePxPerSecond = 26f * zoom
     val pxPerMs = with(density) { (basePxPerSecond.dp.toPx()) / 1000f }
     val totalTimelineMs = maxOf(timeline.totalDurationMs + 10_000L, 60_000L)
@@ -213,12 +219,24 @@ fun MultiTrackTimeline(
             }
 
             // Scrollable Multi-Track Canvas
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .horizontalScroll(scrollState)
             ) {
+                val viewportWidthPx = with(density) { maxWidth.toPx() }
+                LaunchedEffect(isPlaying, playheadMs, pxPerMs, viewportWidthPx) {
+                    if (isPlaying) {
+                        val target = ((playheadMs * pxPerMs) - viewportWidthPx * 0.5f)
+                            .toInt().coerceIn(0, scrollState.maxValue)
+                        scrollState.animateScrollTo(target, animationSpec = tween(durationMillis = 90))
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .horizontalScroll(scrollState)
+                ) {
                 Column(
                     modifier = Modifier
                         .width(contentWidthDp)
@@ -269,11 +287,11 @@ fun MultiTrackTimeline(
                         .width(16.dp)
                         .fillMaxHeight()
                         .pointerInput(pxPerMs) {
-                            var dragStartMs = playheadMs
+                            var dragStartMs = latestPlayheadMs
                             var accumulatedDragPx = 0f
                             detectDragGestures(
                                 onDragStart = {
-                                    dragStartMs = playheadMs
+                                    dragStartMs = latestPlayheadMs
                                     accumulatedDragPx = 0f
                                 },
                                 onDrag = { change, dragAmount ->
@@ -304,6 +322,7 @@ fun MultiTrackTimeline(
                             strokeWidth = 3f
                         )
                     }
+                }
                 }
             }
         }
