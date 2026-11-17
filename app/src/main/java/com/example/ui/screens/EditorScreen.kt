@@ -399,6 +399,7 @@ fun EditorScreen(
                 timeline = uiState.timeline,
                 assets = assets,
                 playheadMs = uiState.playheadMs,
+                isPlaying = uiState.isPlaying,
                 zoom = uiState.timelineZoom,
                 selectedClipId = uiState.selectedClipId,
                 highlightedClipId = uiState.highlightedClipId,
