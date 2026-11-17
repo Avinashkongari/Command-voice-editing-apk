@@ -356,6 +356,50 @@ class TimelineEngine(initialDocument: TimelineDocument = TimelineDocument()) {
                     )
                 }!!
             }
+            "animate_all_images" -> {
+                val imageAssetIds = assets.filter { it.type == com.example.domain.model.MediaAssetType.IMAGE }
+                    .map { it.id }.toSet()
+                val imageClips = currentDocument.clips.filter { it.assetId in imageAssetIds }
+                if (imageClips.isEmpty()) {
+                    EngineExecutionResult(currentDocument, null, "No image clips found on timeline.", success = false)
+                } else {
+                    val endScaleFactor = (op.scale ?: 1.08f).coerceIn(1.01f, 1.5f)
+                    val updatedClips = currentDocument.clips.map { clip ->
+                        if (clip.assetId !in imageAssetIds) clip else {
+                            val duration = clip.durationMs.coerceAtLeast(1L)
+                            val startFrame = Keyframe(
+                                id = UUID.randomUUID().toString(),
+                                timeOffsetMs = 0L,
+                                x = clip.positionX,
+                                y = clip.positionY,
+                                scale = clip.scale,
+                                rotationDeg = clip.rotationDeg,
+                                opacity = clip.effects.opacity,
+                                volume = clip.volume
+                            )
+                            val endFrame = Keyframe(
+                                id = UUID.randomUUID().toString(),
+                                timeOffsetMs = duration,
+                                x = clip.positionX,
+                                y = clip.positionY,
+                                scale = (clip.scale * endScaleFactor).coerceAtMost(3f),
+                                rotationDeg = clip.rotationDeg,
+                                opacity = clip.effects.opacity,
+                                volume = clip.volume
+                            )
+                            val retained = clip.keyframes.filterNot {
+                                it.timeOffsetMs <= 80L || it.timeOffsetMs >= duration - 80L
+                            }
+                            clip.copy(keyframes = (retained + startFrame + endFrame).sortedBy { it.timeOffsetMs })
+                        }
+                    }
+                    commit(
+                        currentDocument.copy(clips = updatedClips),
+                        "Added start/end zoom keyframes to ${imageClips.size} image clip(s) using each image's full duration",
+                        imageClips.firstOrNull()?.id
+                    )
+                }
+            }
             "set_keyframe" -> {
                 val clip = currentDocument.clips.first { it.id == op.clip_id }
                 val offset = (op.time_offset_ms ?: (playheadMs - clip.startMs)).coerceIn(0L, clip.durationMs)
