@@ -425,8 +425,8 @@ fun EditorScreen(
                         onUpdateEffects = { b, c, sat, ex, bl, sh, op, flt, mot ->
                             viewModel.updateSelectedClipEffects(b, c, sat, ex, bl, sh, op, flt, mot)
                         },
-                        onUpdateTransform = { sc, x, y, cr ->
-                            viewModel.updateSelectedClipTransform(sc, x, y, cr)
+                        onUpdateTransform = { sc, x, y, sx, sy, cr ->
+                            viewModel.updateSelectedClipTransform(sc, x, y, sx, sy, cr)
                         },
                         onRotate = { deg -> viewModel.rotateSelectedClip(deg) },
                         onUpdateTransition = { tr, dur -> viewModel.updateSelectedClipTransition(tr, dur) },
