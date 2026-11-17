@@ -19,7 +19,8 @@ import kotlin.math.roundToLong
 data class EngineExecutionResult(
     val document: TimelineDocument,
     val highlightedClipId: String? = null,
-    val summary: String
+    val summary: String,
+    val success: Boolean = true
 )
 
 /**
@@ -193,6 +194,7 @@ class TimelineEngine(initialDocument: TimelineDocument = TimelineDocument()) {
         var lastResult = EngineExecutionResult(currentDocument, null, "No changes applied.")
         for (op in operations) {
             lastResult = executeSingleAiOperation(op, assets, playheadMs)
+            if (!lastResult.success) return lastResult
         }
         return lastResult
     }
@@ -203,8 +205,8 @@ class TimelineEngine(initialDocument: TimelineDocument = TimelineDocument()) {
         playheadMs: Long
     ): EngineExecutionResult {
         return when (op.operation.lowercase()) {
-            "undo" -> undo() ?: EngineExecutionResult(currentDocument, null, "Nothing to undo.")
-            "redo" -> redo() ?: EngineExecutionResult(currentDocument, null, "Nothing to redo.")
+            "undo" -> undo() ?: EngineExecutionResult(currentDocument, null, "Nothing to undo.", success = false)
+            "redo" -> redo() ?: EngineExecutionResult(currentDocument, null, "Nothing to redo.", success = false)
             "add_image", "add_video", "add_audio" -> {
                 val asset = assets.first { it.id == op.asset_id }
                 val defaultTrack = when (op.operation.lowercase()) {
@@ -238,15 +240,15 @@ class TimelineEngine(initialDocument: TimelineDocument = TimelineDocument()) {
             "split" -> {
                 val id = op.clip_id!!
                 splitClip(id, op.split_ms ?: playheadMs)
-                    ?: EngineExecutionResult(currentDocument, null, "Could not split clip.")
+                    ?: EngineExecutionResult(currentDocument, null, "Could not split clip: split point must be inside the clip.", success = false)
             }
             "delete" -> {
                 deleteClip(op.clip_id!!)
-                    ?: EngineExecutionResult(currentDocument, null, "Clip not found.")
+                    ?: EngineExecutionResult(currentDocument, null, "Clip not found for delete.", success = false)
             }
             "duplicate" -> {
                 duplicateClip(op.clip_id!!)
-                    ?: EngineExecutionResult(currentDocument, null, "Clip not found.")
+                    ?: EngineExecutionResult(currentDocument, null, "Clip not found for duplicate.", success = false)
             }
             "move", "resize" -> {
                 val clip = currentDocument.clips.first { it.id == op.clip_id }
@@ -364,7 +366,63 @@ class TimelineEngine(initialDocument: TimelineDocument = TimelineDocument()) {
                     it.copy(keyframes = (it.keyframes + kf).sortedBy { k -> k.timeOffsetMs })
                 }!!
             }
-            else -> EngineExecutionResult(currentDocument, null, "No operation executed.")
+            else -> EngineExecutionResult(currentDocument, null, "No operation executed for '${'
+        }
+    }
+
+    private fun opacityOrPreserve(newOpacity: Float?, clip: TimelineClip): Float =
+        newOpacity?.coerceIn(0f, 1f) ?: clip.effects.opacity
+
+    private fun TimelineClip.copy(
+        effects: ClipEffects,
+        scale: Float,
+        opacityVal: Float
+    ): TimelineClip = this.copy(
+        effects = effects.copy(opacity = opacityVal),
+        scale = scale
+    )
+
+    private fun snapIfEnabled(targetMs: Long, ignoreClipId: String?): Long {
+        if (!currentDocument.snappingEnabled) return targetMs
+        val thresholdMs = 350L
+        val snapPoints = buildList {
+            add(0L)
+            currentDocument.clips.filter { it.id != ignoreClipId }.forEach {
+                add(it.startMs)
+                add(it.endMs)
+            }
+        }
+        return snapPoints.minByOrNull { kotlin.math.abs(it - targetMs) }
+            ?.takeIf { kotlin.math.abs(it - targetMs) <= thresholdMs }
+            ?: targetMs
+    }
+
+    private fun parseHexColor(hex: String?): Long? {
+        if (hex.isNullOrBlank()) return null
+        val clean = hex.trim().removePrefix("#")
+        return when (clean.length) {
+            6 -> ("FF$clean").toLongOrNull(16)
+            8 -> clean.toLongOrNull(16)
+            else -> null
+        }
+    }
+
+    companion object {
+        fun formatMs(ms: Long): String {
+            val totalSec = (ms / 1000L).coerceAtLeast(0L)
+            val mins = totalSec / 60
+            val secs = totalSec % 60
+            val hrs = mins / 60
+            val remMins = mins % 60
+            return if (hrs > 0) {
+                String.format("%02d:%02d:%02d", hrs, remMins, secs)
+            } else {
+                String.format("%02d:%02d", remMins, secs)
+            }
+        }
+    }
+}
+}{op.operation}'.", success = false)
         }
     }
 
