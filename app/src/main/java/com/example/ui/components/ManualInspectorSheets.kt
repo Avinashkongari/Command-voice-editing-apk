@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Diamond
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -95,6 +96,8 @@ fun ManualInspectorSheet(
     onAddText: (String, Boolean, Float, Long, TextAnimationPreset) -> Unit,
     onUpdateText: (String, Float, Long, TextAnimationPreset) -> Unit,
     onAddKeyframe: () -> Unit,
+    onRemoveKeyframe: (String) -> Unit,
+    onClearKeyframes: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -155,7 +158,7 @@ fun ManualInspectorSheet(
                     }
                     EditorInspectorTab.TEXT -> TextInspector(selectedClip, onAddText, onUpdateText)
                     EditorInspectorTab.KEYFRAMES -> selectedClip?.let { clip ->
-                        KeyframeInspector(clip, playheadMs, onAddKeyframe)
+                        KeyframeInspector(clip, playheadMs, onAddKeyframe, onRemoveKeyframe, onClearKeyframes)
                     }
                 }
             }
@@ -443,9 +446,15 @@ private fun TextInspector(
 }
 
 @Composable
-private fun KeyframeInspector(clip: TimelineClip, playheadMs: Long, onAddKeyframe: () -> Unit) {
+private fun KeyframeInspector(
+    clip: TimelineClip,
+    playheadMs: Long,
+    onAddKeyframe: () -> Unit,
+    onRemoveKeyframe: (String) -> Unit,
+    onClearKeyframes: () -> Unit
+) {
     Text(
-        text = "${clip.keyframes.size} keyframe(s) on this clip. Adjust Transform/Opacity/Volume at any playhead position and tap Add Keyframe.",
+        text = "${clip.keyframes.size} keyframe(s). Move the playhead, adjust Transform/Opacity, then set a keyframe. Remove individual points or clear the animation.",
         style = MaterialTheme.typography.bodyMedium,
         color = TextSecondary
     )
@@ -460,26 +469,36 @@ private fun KeyframeInspector(clip: TimelineClip, playheadMs: Long, onAddKeyfram
         Text("Set Keyframe at ${TimelineEngine.formatMs(playheadMs)}")
     }
     if (clip.keyframes.isNotEmpty()) {
-        Spacer(Modifier.height(8.dp))
-        clip.keyframes.forEach { kf ->
+        Spacer(Modifier.height(6.dp))
+        OutlinedButton(onClick = onClearKeyframes, modifier = Modifier.fillMaxWidth()) {
+            Text("Clear All Keyframes")
+        }
+        Spacer(Modifier.height(6.dp))
+        clip.keyframes.sortedBy { it.timeOffsetMs }.forEach { kf ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 3.dp)
                     .background(StudioSurfaceElevated, RoundedCornerShape(8.dp))
-                    .padding(8.dp),
+                    .padding(start = 10.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "@ ${TimelineEngine.formatMs(kf.timeOffsetMs)}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = AmberAccent
-                )
-                Text(
-                    text = "Scale ${String.format("%.2f", kf.scale)} • Opacity ${(kf.opacity * 100).toInt()}% • Rot ${kf.rotationDeg.toInt()}°",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "@ ${TimelineEngine.formatMs(kf.timeOffsetMs)}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = AmberAccent
+                    )
+                    Text(
+                        text = "Scale ${String.format("%.2f", kf.scale)} • X ${String.format("%.2f", kf.stretchX)} • Y ${String.format("%.2f", kf.stretchY)} • Opacity ${(kf.opacity * 100).toInt()}% • Rot ${kf.rotationDeg.toInt()}°",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary
+                    )
+                }
+                IconButton(onClick = { onRemoveKeyframe(kf.id) }) {
+                    Icon(Icons.Rounded.Delete, contentDescription = "Remove keyframe", tint = TextMuted)
+                }
             }
         }
     }
