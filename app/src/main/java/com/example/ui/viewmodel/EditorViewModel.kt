@@ -532,12 +532,28 @@ class EditorViewModel(
             x = clip.positionX,
             y = clip.positionY,
             scale = clip.scale,
+            stretchX = clip.stretchX,
+            stretchY = clip.stretchY,
             rotationDeg = clip.rotationDeg,
             opacity = clip.effects.opacity,
             volume = clip.volume
         )
         timelineEngine.updateClip(clip.id, "Added keyframe at ${TimelineEngine.formatMs(offset)}") {
             it.copy(keyframes = (it.keyframes.filterNot { k -> kotlin.math.abs(k.timeOffsetMs - offset) < 120L } + kf).sortedBy { k -> k.timeOffsetMs })
+        }?.let { applyEngineResult(it) }
+    }
+
+    fun removeSelectedKeyframe(keyframeId: String) {
+        val clipId = _uiState.value.selectedClipId ?: return
+        timelineEngine.updateClip(clipId, "Removed keyframe") { clip ->
+            clip.copy(keyframes = clip.keyframes.filterNot { it.id == keyframeId })
+        }?.let { applyEngineResult(it) }
+    }
+
+    fun clearSelectedClipKeyframes() {
+        val clipId = _uiState.value.selectedClipId ?: return
+        timelineEngine.updateClip(clipId, "Cleared clip keyframes") {
+            it.copy(keyframes = emptyList())
         }?.let { applyEngineResult(it) }
     }
 
