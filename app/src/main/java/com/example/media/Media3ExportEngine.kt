@@ -453,27 +453,43 @@ class Media3ExportEngine(
             )
         }
 
-        // Animate keyframed scale during export as well as in the live preview.
-        // Keyframe scale values are absolute clip scales, so this matrix applies only
-        // the ratio over the static base scale above.
+        // Keyframe transform animation: scale, independent X/Y stretch, rotation and
+        // position use the same interpolated values as the live preview.
         if (clip.keyframes.size >= 2) {
             val frames = clip.keyframes.sortedBy { it.timeOffsetMs }
-            val baseScale = clip.scale.coerceAtLeast(0.001f)
             list.add(MatrixTransformation { timeUs ->
                 val localMs = (timeUs / 1000L).coerceIn(0L, durationMs)
                 val before = frames.lastOrNull { it.timeOffsetMs <= localMs }
                 val after = frames.firstOrNull { it.timeOffsetMs > localMs }
-                val animatedScale = when {
-                    before != null && after != null && after.timeOffsetMs > before.timeOffsetMs -> {
-                        val fraction = ((localMs - before.timeOffsetMs).toFloat() /
-                            (after.timeOffsetMs - before.timeOffsetMs).toFloat()).coerceIn(0f, 1f)
-                        before.scale + (after.scale - before.scale) * fraction
-                    }
-                    before != null -> before.scale
-                    else -> frames.first().scale
+                val fraction = if (before != null && after != null && after.timeOffsetMs > before.timeOffsetMs) {
+                    ((localMs - before.timeOffsetMs).toFloat() /
+                        (after.timeOffsetMs - before.timeOffsetMs).toFloat()).coerceIn(0f, 1f)
+                } else 0f
+                val first = frames.first()
+                val left = before ?: first
+                val right = after ?: left
+                fun mix(a: Float, b: Float): Float = a + (b - a) * fraction
+
+                val animatedScale = mix(left.scale, right.scale)
+                val animatedStretchX = mix(left.stretchX, right.stretchX)
+                val animatedStretchY = mix(left.stretchY, right.stretchY)
+                val animatedRotation = mix(left.rotationDeg, right.rotationDeg)
+                val animatedX = mix(left.x, right.x)
+                val animatedY = mix(left.y, right.y)
+
+                val factorX = ((animatedScale * animatedStretchX) /
+                    (clip.scale * clip.stretchX).coerceAtLeast(0.001f)).coerceIn(0.1f, 6f)
+                val factorY = ((animatedScale * animatedStretchY) /
+                    (clip.scale * clip.stretchY).coerceAtLeast(0.001f)).coerceIn(0.1f, 6f)
+                val rotationDelta = animatedRotation - clip.rotationDeg
+                val translateX = (animatedX - clip.positionX) * 2f
+                val translateY = (animatedY - clip.positionY) * 2f
+
+                Matrix().apply {
+                    postScale(factorX, factorY)
+                    postRotate(rotationDelta)
+                    postTranslate(translateX, translateY)
                 }
-                val factor = (animatedScale / baseScale).coerceIn(0.1f, 4f)
-                Matrix().apply { postScale(factor, factor) }
             })
         }
 
