@@ -108,7 +108,8 @@ class Media3ExportEngine(
                 maxW = max(maxW, caps.supportedWidths.upper)
                 maxH = max(maxH, caps.supportedHeights.upper)
                 supports60 = supports60 || runCatching {
-                    caps.areSizeAndRateSupported(1920, 1080, 60.0)
+                    caps.areSizeAndRateSupported(1920, 1080, 60.0) ||
+                        caps.areSizeAndRateSupported(1080, 1920, 60.0)
                 }.getOrDefault(false)
                 supports2k = supports2k || runCatching {
                     caps.areSizeAndRateSupported(2560, 1440, 30.0) ||
@@ -239,7 +240,7 @@ class Media3ExportEngine(
                 .build()
 
             activeTransformer = transformer
-            _exportState.value = ExportProgressState.Running(5, "Encoding ${settings.resolution.label} @ ${fps}fps...")
+            _exportState.value = ExportProgressState.Running(5, "Encoding ${settings.resolution.label} @ ${fps}fps • ${settings.bitrate.label}...")
             transformer.start(composition, tempOutputFile.absolutePath)
             startProgressPolling(transformer)
         } catch (e: Exception) {
@@ -346,7 +347,14 @@ class Media3ExportEngine(
 
             visualSequenceItems.add(
                 buildVisualEditedItem(
-                    clip = clip.copy(startMs = clippedStart),
+                    clip = clip.copy(
+                        startMs = clippedStart,
+                        sourceStartMs = if (asset.type == com.example.domain.model.MediaAssetType.IMAGE) {
+                            clip.sourceStartMs
+                        } else {
+                            clip.sourceStartMs + ((clippedStart - clip.startMs).coerceAtLeast(0L) * clip.speed).toLong()
+                        }
+                    ),
                     asset = asset,
                     targetDurationMs = clipDur,
                     fps = fps,
