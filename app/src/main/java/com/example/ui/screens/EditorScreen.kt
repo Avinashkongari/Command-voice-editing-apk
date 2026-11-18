@@ -436,6 +436,8 @@ fun EditorScreen(
                         onAddText = { txt, isSub, sz, col, anim -> viewModel.addManualText(txt, isSub, sz, col, anim) },
                         onUpdateText = { txt, sz, col, anim -> viewModel.updateSelectedText(txt, sz, col, anim) },
                         onAddKeyframe = { viewModel.addKeyframeAtPlayhead() },
+                        onRemoveKeyframe = { keyframeId -> viewModel.removeSelectedKeyframe(keyframeId) },
+                        onClearKeyframes = { viewModel.clearSelectedClipKeyframes() },
                         modifier = Modifier.height(220.dp)
                     )
                 }
