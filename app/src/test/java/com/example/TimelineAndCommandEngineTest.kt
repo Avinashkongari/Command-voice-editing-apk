@@ -134,6 +134,40 @@ class TimelineAndCommandEngineTest {
     }
 
     @Test
+    fun `animate all images adds exactly two duration-based varied keyframes`() {
+        val engine = TimelineEngine()
+        repeat(4) { index ->
+            engine.addAssetClip(
+                sampleImageAsset,
+                TrackType.IMAGE_OVERLAY,
+                index * 6_000L,
+                index * 6_000L + (3_000L + index * 1_000L)
+            )
+        }
+
+        val result = engine.executeAiOperations(
+            operations = listOf(AiEditorOperation(operation = "animate_all_images")),
+            assets = listOf(sampleImageAsset),
+            playheadMs = 0L
+        )
+
+        val clips = result.document.clips.sortedBy { it.startMs }
+        assertEquals(4, clips.size)
+        clips.forEachIndexed { index, clip ->
+            assertEquals(2, clip.keyframes.size)
+            assertEquals(0L, clip.keyframes.first().timeOffsetMs)
+            assertEquals(clip.durationMs, clip.keyframes.last().timeOffsetMs)
+            assertTrue(clip.keyframes.first().scale != clip.keyframes.last().scale ||
+                clip.keyframes.first().x != clip.keyframes.last().x ||
+                clip.keyframes.first().y != clip.keyframes.last().y)
+        }
+        assertEquals(3_000L, clips[0].keyframes.last().timeOffsetMs)
+        assertEquals(6_000L, clips[3].keyframes.last().timeOffsetMs)
+        assertTrue(clips[0].keyframes.last().scale > clips[0].keyframes.first().scale)
+        assertTrue(clips[1].keyframes.last().scale < clips[1].keyframes.first().scale)
+    }
+
+    @Test
     fun `timeline engine executes add_image, effect, transition, split, and undo redo`() {
         val engine = TimelineEngine()
 
