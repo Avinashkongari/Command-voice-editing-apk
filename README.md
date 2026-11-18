@@ -4,8 +4,7 @@
 - **Package Name (`applicationId`)**: `com.aistudio.voxcut.vkxrqm`
 - **Version**: `1.0` (`versionCode: 1`)
 - **Min / Target SDK**: Android 8.0 (API 26) / Android 16 (API 36)
-- **Latest Debug APK**: [`releases/VoxCut_Studio_latest-debug.apk`](releases/VoxCut_Studio_latest-debug.apk) (automatically replaced after a successful CI test + build)
-- **Versioned Debug APK**: `releases/VoxCut_Studio_v1.0.0-debug.apk` (previous build)
+- **Debug APK**: Download the `VoxCut-Studio-debug` artifact from the latest successful [Android Build workflow](https://github.com/Avinashkongari/Command-voice-editing-apk/actions/workflows/android-build.yml).
 
 ## Core Capabilities
 
@@ -24,7 +23,7 @@
 
 ## APK Download & Installation Instructions (Android Phone)
 
-1. Open [`releases/VoxCut_Studio_latest-debug.apk`](releases/VoxCut_Studio_latest-debug.apk) in the repository and tap **Download** / **View raw**.
+1. Open the [latest successful Android Build workflow](https://github.com/Avinashkongari/Command-voice-editing-apk/actions/workflows/android-build.yml), open its run, and download the `VoxCut-Studio-debug` artifact.
 2. On your Android 8.0+ phone, open the downloaded `.apk` file from your Downloads / Files app.
 3. If prompted, enable **Allow from this source** for your browser or file manager, then tap **Install**.
 4. Open **VoxCut Studio**, go to **AI API Settings**, configure your provider (Gemini / OpenAI-compatible / Custom), fetch models, and tap **Test Connection** to enable voice editing.
