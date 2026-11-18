@@ -164,8 +164,8 @@ fun LivePreviewStage(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer {
-                                    scaleX = tf.scale * activeVideoClip.stretchX
-                                    scaleY = tf.scale * activeVideoClip.stretchY
+                                    scaleX = tf.scale * tf.stretchX
+                                    scaleY = tf.scale * tf.stretchY
                                     rotationZ = tf.rotationDeg
                                     alpha = tf.opacity
                                     translationX = tf.translateXPx * size.width
@@ -208,8 +208,8 @@ fun LivePreviewStage(
                                 } else Modifier
                             )
                             .graphicsLayer {
-                                scaleX = tf.scale * imgClip.stretchX
-                                scaleY = tf.scale * imgClip.stretchY
+                                scaleX = tf.scale * tf.stretchX
+                                scaleY = tf.scale * tf.stretchY
                                 rotationZ = tf.rotationDeg
                                 alpha = tf.opacity
                                 translationX = ((imgClip.positionX - 0.5f) + tf.translateXPx) * size.width
@@ -337,6 +337,8 @@ fun LivePreviewStage(
 
 private data class EvaluatedTransform(
     val scale: Float,
+    val stretchX: Float,
+    val stretchY: Float,
     val rotationDeg: Float,
     val opacity: Float,
     val translateXPx: Float,
@@ -350,6 +352,8 @@ private fun evaluateTransform(clip: TimelineClip, playheadMs: Long): EvaluatedTr
 
     // Keyframe interpolation if keyframes exist
     var baseScale = clip.scale
+    var baseStretchX = clip.stretchX
+    var baseStretchY = clip.stretchY
     var baseRot = clip.rotationDeg
     var baseOpacity = clip.effects.opacity
     var kfDx = 0f
@@ -362,6 +366,8 @@ private fun evaluateTransform(clip: TimelineClip, playheadMs: Long): EvaluatedTr
         if (prev != null && next != null && next.timeOffsetMs > prev.timeOffsetMs) {
             val f = (rel - prev.timeOffsetMs) / (next.timeOffsetMs - prev.timeOffsetMs).toFloat()
             baseScale = prev.scale + (next.scale - prev.scale) * f
+            baseStretchX = prev.stretchX + (next.stretchX - prev.stretchX) * f
+            baseStretchY = prev.stretchY + (next.stretchY - prev.stretchY) * f
             baseRot = prev.rotationDeg + (next.rotationDeg - prev.rotationDeg) * f
             baseOpacity = prev.opacity + (next.opacity - prev.opacity) * f
             kfDx = (prev.x + (next.x - prev.x) * f) - clip.positionX
@@ -369,6 +375,8 @@ private fun evaluateTransform(clip: TimelineClip, playheadMs: Long): EvaluatedTr
         } else {
             val k = prev ?: next!!
             baseScale = k.scale
+            baseStretchX = k.stretchX
+            baseStretchY = k.stretchY
             baseRot = k.rotationDeg
             baseOpacity = k.opacity
             kfDx = k.x - clip.positionX
@@ -419,6 +427,8 @@ private fun evaluateTransform(clip: TimelineClip, playheadMs: Long): EvaluatedTr
 
     return EvaluatedTransform(
         scale = baseScale * motionScale * transScale,
+        stretchX = baseStretchX,
+        stretchY = baseStretchY,
         rotationDeg = baseRot,
         opacity = (baseOpacity * transAlpha).coerceIn(0f, 1f),
         translateXPx = kfDx + motionDx + transDx,
