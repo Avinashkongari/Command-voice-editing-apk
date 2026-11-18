@@ -98,6 +98,42 @@ class TimelineAndCommandEngineTest {
     }
 
     @Test
+    fun `AI keyframe preserves independent stretch and transform values`() {
+        val engine = TimelineEngine()
+        val clip = engine.addAssetClip(sampleImageAsset, TrackType.IMAGE_OVERLAY, 0L, 5_000L)
+            .document.clips.single()
+
+        val result = engine.executeAiOperations(
+            operations = listOf(
+                AiEditorOperation(
+                    operation = "set_keyframe",
+                    clip_id = clip.id,
+                    time_offset_ms = 2_000L,
+                    x = 0.62f,
+                    y = 0.38f,
+                    scale = 1.35f,
+                    stretch_x = 1.4f,
+                    stretch_y = 0.75f,
+                    rotation_deg = 22f,
+                    opacity = 0.8f
+                )
+            ),
+            assets = listOf(sampleImageAsset),
+            playheadMs = 2_000L
+        )
+
+        val keyframe = result.document.clips.single().keyframes.single()
+        assertEquals(2_000L, keyframe.timeOffsetMs)
+        assertEquals(0.62f, keyframe.x, 0.001f)
+        assertEquals(0.38f, keyframe.y, 0.001f)
+        assertEquals(1.35f, keyframe.scale, 0.001f)
+        assertEquals(1.4f, keyframe.stretchX, 0.001f)
+        assertEquals(0.75f, keyframe.stretchY, 0.001f)
+        assertEquals(22f, keyframe.rotationDeg, 0.001f)
+        assertEquals(0.8f, keyframe.opacity, 0.001f)
+    }
+
+    @Test
     fun `timeline engine executes add_image, effect, transition, split, and undo redo`() {
         val engine = TimelineEngine()
 
