@@ -4,7 +4,8 @@
 - **Package Name (`applicationId`)**: `com.aistudio.voxcut.vkxrqm`
 - **Version**: `1.0` (`versionCode: 1`)
 - **Min / Target SDK**: Android 8.0 (API 26) / Android 16 (API 36)
-- **Debug APK Artifact**: `releases/VoxCut_Studio_v1.0.0-debug.apk` (`25,818,360` bytes / ~24.6 MB, APK Signature Scheme v2 verified)
+- **Latest Debug APK**: [`releases/VoxCut_Studio_latest-debug.apk`](releases/VoxCut_Studio_latest-debug.apk) (automatically replaced after a successful CI test + build)
+- **Versioned Debug APK**: `releases/VoxCut_Studio_v1.0.0-debug.apk` (previous build)
 
 ## Core Capabilities
 
@@ -19,11 +20,11 @@
 - **Multi-Track Visual Timeline & Media3 Export**:
   - Video, Image Overlay, Text & Subtitles, FX & Keyframes, Audio/Story Narration (with streaming `MediaExtractor`/`MediaCodec` waveform peaks), and Voiceover recording (`MediaRecorder`).
   - Manual tools: Split, Trim, Crop, Rotate, Scale/Position, Duplicate, Freeze Frame, Color Filters, Brightness/Contrast/Saturation/Exposure/Blur, Ken Burns motion, Transitions, Speed (`0.25x–4x`), Volume/Fades, and Keyframes.
-  - Real **Media3 Transformer** MP4 export (`480p`–`4K`, `24/30/60 FPS`, configurable bitrate) with device `MediaCodecList` capability checks and `StatFs` storage checks.
+  - Real **Media3 Transformer** MP4 export (`480p`–`4K`, `24/30/60 FPS`, selected bitrate applied through the hardware encoder settings) with per-codec resolution/frame-rate capability checks, output-file validation, safer MediaStore publishing, and `StatFs` storage checks.
 
 ## APK Download & Installation Instructions (Android Phone)
 
-1. Open `releases/VoxCut_Studio_v1.0.0-debug.apk` in the repository and tap **Download** / **View raw**.
+1. Open [`releases/VoxCut_Studio_latest-debug.apk`](releases/VoxCut_Studio_latest-debug.apk) in the repository and tap **Download** / **View raw**.
 2. On your Android 8.0+ phone, open the downloaded `.apk` file from your Downloads / Files app.
 3. If prompted, enable **Allow from this source** for your browser or file manager, then tap **Install**.
 4. Open **VoxCut Studio**, go to **AI API Settings**, configure your provider (Gemini / OpenAI-compatible / Custom), fetch models, and tap **Test Connection** to enable voice editing.
