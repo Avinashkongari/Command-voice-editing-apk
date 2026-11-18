@@ -96,7 +96,7 @@ fun ExportSettingsScreen(
     var fps by remember(project?.id) {
         mutableStateOf(project?.targetFps ?: FrameRateOption.FPS_30)
     }
-    var bitrate by remember { mutableStateOf(BitratePreset.STANDARD) }
+    var bitrate by remember(project?.id) { mutableStateOf(BitratePreset.HIGH) }
     var fileName by remember(project?.id) {
         mutableStateOf((project?.title ?: "VoxCut_Story").replace(" ", "_"))
     }
