@@ -376,16 +376,44 @@ class TimelineEngine(initialDocument: TimelineDocument = TimelineDocument()) {
                 if (imageClips.isEmpty()) {
                     EngineExecutionResult(currentDocument, null, "No image clips found on timeline.", success = false)
                 } else {
-                    val endScaleFactor = (op.scale ?: 1.08f).coerceIn(1.01f, 1.5f)
+                    val endScaleFactor = (op.scale ?: 1.08f).coerceIn(1.03f, 1.15f)
+                    var imageIndex = 0
                     val updatedClips = currentDocument.clips.map { clip ->
                         if (clip.assetId !in imageAssetIds) clip else {
                             val duration = clip.durationMs.coerceAtLeast(1L)
+                            // Rotate through four restrained Ken Burns patterns so a manhwa
+                            // sequence does not repeat the same zoom on every panel.
+                            val pattern = imageIndex++ % 4
+                            val pan = 0.025f
+                            val startX = when (pattern) {
+                                0 -> (clip.positionX + pan).coerceIn(0.05f, 0.95f)
+                                1 -> (clip.positionX - pan).coerceIn(0.05f, 0.95f)
+                                else -> clip.positionX
+                            }
+                            val endX = when (pattern) {
+                                0 -> (clip.positionX - pan).coerceIn(0.05f, 0.95f)
+                                1 -> (clip.positionX + pan).coerceIn(0.05f, 0.95f)
+                                else -> clip.positionX
+                            }
+                            val startY = when (pattern) {
+                                2 -> (clip.positionY + pan).coerceIn(0.05f, 0.95f)
+                                3 -> (clip.positionY - pan).coerceIn(0.05f, 0.95f)
+                                else -> clip.positionY
+                            }
+                            val endY = when (pattern) {
+                                2 -> (clip.positionY - pan).coerceIn(0.05f, 0.95f)
+                                3 -> (clip.positionY + pan).coerceIn(0.05f, 0.95f)
+                                else -> clip.positionY
+                            }
+                            val zoomOut = pattern == 1 || pattern == 3
+                            val startScale = if (zoomOut) clip.scale * endScaleFactor else clip.scale
+                            val endScale = if (zoomOut) clip.scale else clip.scale * endScaleFactor
                             val startFrame = Keyframe(
                                 id = UUID.randomUUID().toString(),
                                 timeOffsetMs = 0L,
-                                x = clip.positionX,
-                                y = clip.positionY,
-                                scale = clip.scale,
+                                x = startX,
+                                y = startY,
+                                scale = startScale.coerceAtMost(3f),
                                 stretchX = clip.stretchX,
                                 stretchY = clip.stretchY,
                                 rotationDeg = clip.rotationDeg,
@@ -395,24 +423,22 @@ class TimelineEngine(initialDocument: TimelineDocument = TimelineDocument()) {
                             val endFrame = Keyframe(
                                 id = UUID.randomUUID().toString(),
                                 timeOffsetMs = duration,
-                                x = clip.positionX,
-                                y = clip.positionY,
-                                scale = (clip.scale * endScaleFactor).coerceAtMost(3f),
+                                x = endX,
+                                y = endY,
+                                scale = endScale.coerceAtMost(3f),
                                 stretchX = clip.stretchX,
                                 stretchY = clip.stretchY,
                                 rotationDeg = clip.rotationDeg,
                                 opacity = clip.effects.opacity,
                                 volume = clip.volume
                             )
-                            val retained = clip.keyframes.filterNot {
-                                it.timeOffsetMs <= 80L || it.timeOffsetMs >= duration - 80L
-                            }
-                            clip.copy(keyframes = (retained + startFrame + endFrame).sortedBy { it.timeOffsetMs })
+                            // This bulk command deliberately leaves exactly two keyframes per photo.
+                            clip.copy(keyframes = listOf(startFrame, endFrame))
                         }
                     }
                     commit(
                         currentDocument.copy(clips = updatedClips),
-                        "Added start/end zoom keyframes to ${imageClips.size} image clip(s) using each image's full duration",
+                        "Applied varied slow zoom/pan with exactly 2 duration-based keyframes to ${imageClips.size} image clip(s)",
                         imageClips.firstOrNull()?.id
                     )
                 }
