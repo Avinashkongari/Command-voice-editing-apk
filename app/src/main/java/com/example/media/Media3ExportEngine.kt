@@ -45,6 +45,7 @@ import androidx.media3.effect.RgbFilter
 import androidx.media3.effect.ScaleAndRotateTransformation
 import androidx.media3.effect.SpeedChangeEffect
 import androidx.media3.transformer.Composition
+import androidx.media3.transformer.DefaultEncoderFactory
 import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.Effects
@@ -52,6 +53,7 @@ import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.ProgressHolder
 import androidx.media3.transformer.Transformer
+import androidx.media3.transformer.VideoEncoderSettings
 import com.example.domain.model.ColorFilterPreset
 import com.example.domain.model.ExportProgressState
 import com.example.domain.model.ExportResolution
@@ -91,19 +93,36 @@ class Media3ExportEngine(
     val exportState: StateFlow<ExportProgressState> = _exportState.asStateFlow()
 
     fun queryDeviceCapabilities(): DeviceEncoderCapabilities {
-        var maxW = 1920
-        var maxH = 1080
-        var supports60 = true
+        var maxW = 0
+        var maxH = 0
+        var supports60 = false
+        var supports2k = false
+        var supports4k = false
         runCatching {
             val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
             for (info in codecList.codecInfos) {
                 if (!info.isEncoder) continue
-                if (!info.supportedTypes.any { it.equals(MediaFormat.MIMETYPE_VIDEO_AVC, true) }) continue
-                val caps = info.getCapabilitiesForType(MediaFormat.MIMETYPE_VIDEO_AVC).videoCapabilities ?: continue
+                val avcType = info.supportedTypes.firstOrNull { it.equals(MediaFormat.MIMETYPE_VIDEO_AVC, true) }
+                    ?: continue
+                val caps = info.getCapabilitiesForType(avcType).videoCapabilities ?: continue
                 maxW = max(maxW, caps.supportedWidths.upper)
                 maxH = max(maxH, caps.supportedHeights.upper)
-                supports60 = caps.areSizeAndRateSupported(1920, 1080, 60.0)
+                supports60 = supports60 || runCatching {
+                    caps.areSizeAndRateSupported(1920, 1080, 60.0)
+                }.getOrDefault(false)
+                supports2k = supports2k || runCatching {
+                    caps.areSizeAndRateSupported(2560, 1440, 30.0) ||
+                        caps.areSizeAndRateSupported(1440, 2560, 30.0)
+                }.getOrDefault(false)
+                supports4k = supports4k || runCatching {
+                    caps.areSizeAndRateSupported(3840, 2160, 30.0) ||
+                        caps.areSizeAndRateSupported(2160, 3840, 30.0)
+                }.getOrDefault(false)
             }
+        }
+        if (maxW == 0 || maxH == 0) {
+            maxW = 1920
+            maxH = 1080
         }
         val storageDir = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES) ?: context.filesDir
         val stat = StatFs(storageDir.absolutePath)
@@ -142,6 +161,14 @@ class Media3ExportEngine(
             _exportState.value = ExportProgressState.Failed("This device's hardware H.264 encoder does not support 4K resolution. Select 1080p or 2K.")
             return
         }
+        if (settings.resolution == ExportResolution.RES_2K && !caps.supports2k) {
+            _exportState.value = ExportProgressState.Failed("This device's hardware H.264 encoder does not support 2K at 30 FPS. Select 1080p.")
+            return
+        }
+        if (settings.frameRate == com.example.domain.model.FrameRateOption.FPS_60 && !caps.supports60Fps) {
+            _exportState.value = ExportProgressState.Failed("This device's hardware H.264 encoder does not support 1080p at 60 FPS. Select 30 FPS.")
+            return
+        }
 
         _exportState.value = ExportProgressState.Running(2, "Preparing Media3 Composition...")
 
@@ -165,13 +192,30 @@ class Media3ExportEngine(
                 fps = fps
             )
 
+            // Honor the bitrate selected in Export Settings instead of silently using
+            // Media3's automatic default. VBR keeps quality efficient for mixed scenes.
+            val encoderFactory = DefaultEncoderFactory.Builder(context)
+                .setRequestedVideoEncoderSettings(
+                    VideoEncoderSettings.Builder()
+                        .setBitrate(settings.bitrate.bps)
+                        .build()
+                )
+                .build()
             val transformer = Transformer.Builder(context)
                 .setVideoMimeType(MimeTypes.VIDEO_H264)
                 .setAudioMimeType(MimeTypes.AUDIO_AAC)
+                .setEncoderFactory(encoderFactory)
                 .addListener(object : Transformer.Listener {
                     override fun onCompleted(composition: Composition, exportResult: ExportResult) {
                         stopProgressPolling()
-                        val publishedUri = publishToMediaStore(tempOutputFile, "${safeName}.mp4")
+                        activeTransformer = null
+                        if (!tempOutputFile.exists() || tempOutputFile.length() <= 0L) {
+                            _exportState.value = ExportProgressState.Failed("Export finished but the MP4 output is missing or empty. Please try again.")
+                            return
+                        }
+                        val publishedUri = runCatching {
+                            publishToMediaStore(tempOutputFile, "${safeName}.mp4")
+                        }.getOrNull()
                         _exportState.value = ExportProgressState.Completed(
                             outputFilePath = tempOutputFile.absolutePath,
                             contentUriString = publishedUri?.toString() ?: Uri.fromFile(tempOutputFile).toString(),
@@ -186,6 +230,7 @@ class Media3ExportEngine(
                         exportException: ExportException
                     ) {
                         stopProgressPolling()
+                        activeTransformer = null
                         tempOutputFile.delete()
                         val reason = exportException.message ?: "Media3 encoding failed (${exportException.errorCodeName})."
                         _exportState.value = ExportProgressState.Failed(reason)
@@ -720,15 +765,22 @@ class Media3ExportEngine(
             }
             val resolver = context.contentResolver
             val uri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values) ?: return null
-            resolver.openOutputStream(uri)?.use { out ->
-                FileInputStream(sourceFile).use { input ->
-                    input.copyTo(out)
+            try {
+                val output = resolver.openOutputStream(uri, "w")
+                    ?: throw IllegalStateException("Could not open the destination video stream.")
+                output.use { out ->
+                    FileInputStream(sourceFile).use { input ->
+                        input.copyTo(out, 128 * 1024)
+                    }
                 }
+                values.clear()
+                values.put(MediaStore.Video.Media.IS_PENDING, 0)
+                resolver.update(uri, values, null, null)
+                uri
+            } catch (error: Exception) {
+                resolver.delete(uri, null, null)
+                throw error
             }
-            values.clear()
-            values.put(MediaStore.Video.Media.IS_PENDING, 0)
-            resolver.update(uri, values, null, null)
-            uri
         }.getOrNull()
     }
 }
